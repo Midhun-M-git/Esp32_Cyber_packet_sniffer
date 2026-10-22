@@ -1,5 +1,5 @@
 <div align="center">
-  <h1>🚀 ESP32 Cyber Packet Sniffer</h1>
+  <h1> ESP32 Cyber Packet Sniffer</h1>
   <p><strong>A futuristic, cyberpunk-themed Wi-Fi analyzer built for the ESP32 and 3.5" Parallel TFT Shields.</strong></p>
 </div>
 
@@ -9,7 +9,7 @@ Welcome to the **ESP32 Cyber Packet Sniffer**! This project turns a standard ESP
 
 Using the ESP32's native **Promiscuous Mode**, the board scans all 2.4GHz Wi-Fi channels, sniffs airborne 802.11 frames, extracts network names (SSIDs), and displays live traffic and raw hexadecimal payload data!
 
-## ✨ Key Features
+## Key Features
 
 * **Real-Time Sniffing**: Uses ESP32 hardware-level promiscuous mode to capture Wi-Fi frames mid-air.
 * **Cinematic Boot Animation**: Features a retro-terminal typewriter boot sequence, glowing progress bar, and visual screen glitches on startup.
@@ -20,11 +20,11 @@ Using the ESP32's native **Promiscuous Mode**, the board scans all 2.4GHz Wi-Fi 
 
 ---
 
-## 🔌 Hardware Connections & Pinout
+## Hardware Connections & Pinout
 
 This code is heavily optimized for **3.5" 8-Bit Parallel TFT Shields** (commonly designed for the Arduino Uno) using drivers like **ILI9486**, **ILI9481**, or **ST7796**.
 
-**⚠️ CRITICAL POWER WARNING:** If you are using an Arduino Uno Shield, you **MUST** connect the shield's `5V` pin to the ESP32's `VIN` (5V) pin. Powering it with 3.3V will result in corrupted, glitchy visual lines.
+** CRITICAL POWER WARNING:** If you are using an Arduino Uno Shield, you **MUST** connect the shield's `5V` pin to the ESP32's `VIN` (5V) pin. Powering it with 3.3V will result in corrupted, glitchy visual lines.
 
 ### Wiring Table (ESP32 to Uno TFT Shield)
 
@@ -48,7 +48,7 @@ This code is heavily optimized for **3.5" 8-Bit Parallel TFT Shields** (commonly
 
 ---
 
-## 📥 Installation & Setup
+## Installation & Setup
 
 1. **Install Arduino IDE** and the [ESP32 Core](https://docs.espressif.com/projects/arduino-esp32/en/latest/installing.html).
 2. Open the **Arduino Library Manager** (`Sketch > Include Library > Manage Libraries`).
@@ -59,7 +59,7 @@ This code is heavily optimized for **3.5" 8-Bit Parallel TFT Shields** (commonly
 
 ---
 
-## 🧠 Deep-Dive Architecture
+## Deep-Dive Architecture
 
 To build a high-performance network sniffer that actually works reliably on cheap hardware, we addressed critical bottlenecks:
 
