@@ -1,74 +1,105 @@
+# ESP32 Cyber Packet Sniffer
+
 <div align="center">
-  <h1> ESP32 Cyber Packet Sniffer</h1>
-  <p><strong>A futuristic, cyberpunk-themed Wi-Fi analyzer built for the ESP32 and 3.5" Parallel TFT Shields.</strong></p>
+
+[![C++](https://img.shields.io/badge/C%2B%2B-00599C?style=for-the-badge&logo=c%2B%2B&logoColor=white)](https://isocpp.org)
+[![ESP32](https://img.shields.io/badge/ESP32-E7352C?style=for-the-badge&logo=espressif&logoColor=white)](https://espressif.com)
+[![Hardware](https://img.shields.io/badge/Display-3.5%22%20Parallel%20TFT-4E73DF?style=for-the-badge)](https://github.com/Bodmer/TFT_eSPI)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg?style=for-the-badge)](LICENSE)
+
 </div>
 
----
-
-Welcome to the **ESP32 Cyber Packet Sniffer**! This project turns a standard ESP32 development board and a 3.5" Arduino Uno TFT LCD Shield into a real-time wireless traffic dashboard with a stunning Cyberpunk aesthetic.
-
-Using the ESP32's native **Promiscuous Mode**, the board scans all 2.4GHz Wi-Fi channels, sniffs airborne 802.11 frames, extracts network names (SSIDs), and displays live traffic and raw hexadecimal payload data!
-
-## Key Features
-
-* **Real-Time Sniffing**: Uses ESP32 hardware-level promiscuous mode to capture Wi-Fi frames mid-air.
-* **Cinematic Boot Animation**: Features a retro-terminal typewriter boot sequence, glowing progress bar, and visual screen glitches on startup.
-* **Intelligent SSID Extraction**: Parses raw Management Frames (Beacons & Probe Requests) to extract human-readable Network Names instead of just showing MAC addresses.
-* **Raw Payload Inspector**: A dedicated Hex-Dump box that intercepts the first 16 bytes of encrypted packet data and streams it live to the screen in a classic matrix style!
-* **Cyberpunk Dashboard**: A premium dark-mode UI with smooth, flicker-free micro-updates and color-coded signal strengths.
-* **LovyanGFX Powered**: Built on the blazing-fast LovyanGFX library. All hardware pin configurations are embedded directly in the sketch—**no external library config files needed!**
+A standalone embedded wireless analysis dashboard built for the ESP32 and 3.5-inch 8-bit parallel TFT shields. Captures raw IEEE 802.11 frames in promiscuous mode and renders real-time wireless metrics and channel telemetry.
 
 ---
 
-## Hardware Connections & Pinout
+## Hardware Architecture & Signal Flow
 
-This code is heavily optimized for **3.5" 8-Bit Parallel TFT Shields** (commonly designed for the Arduino Uno) using drivers like **ILI9486**, **ILI9481**, or **ST7796**.
+```mermaid
+graph LR
+    RF[2.4GHz Wi-Fi Signals] --> ANT[ESP32 Integrated Antenna]
+    ANT --> PROMISC[ESP-IDF Promiscuous Core]
+    PROMISC --> PARSER[Frame Filter & Header Parser]
+    
+    subgraph ESP32 Processing Core
+        PARSER --> CHANNELS[Channel Hopping Engine: 1-14]
+        PARSER --> METRICS[Packet Counter: Beacon / Data / Mgmt]
+        PARSER --> RSSI[Signal Strength & MAC Extractor]
+    end
 
-** CRITICAL POWER WARNING:** If you are using an Arduino Uno Shield, you **MUST** connect the shield's `5V` pin to the ESP32's `VIN` (5V) pin. Powering it with 3.3V will result in corrupted, glitchy visual lines.
+    METRICS --> TFT[TFT_eSPI Parallel 8-Bit Bus]
+    RSSI --> TFT
+    CHANNELS --> TFT
+    TFT --> LCD[3.5 Inch ILI9486 Parallel LCD Shield]
+```
 
-### Wiring Table (ESP32 to Uno TFT Shield)
+---
 
-| TFT Shield Pin | ESP32 GPIO | Description |
+## System Pipeline
+
+```mermaid
+sequenceDiagram
+    participant Air as 802.11 Airwaves
+    participant ESP as ESP32 Wi-Fi Baseband
+    participant Core as Sniffer Parser Callback
+    participant Display as 3.5" TFT LCD
+
+    ESP->>Air: Hop to Channel N
+    Air-->>ESP: Raw IEEE 802.11 Frame
+    ESP->>Core: wifi_promiscuous_rx_cb_t
+    Core->>Core: Decode Frame Type & Subtype
+    Core->>Core: Extract Source MAC & Signal RSSI
+    Core->>Display: Draw Live Waveform & Packet Counters
+```
+
+---
+
+## Technical Specifications
+
+- **Microcontroller**: ESP32 Dual-Core Tensilica LX6 (240MHz)
+- **Supported Display**: 3.5" Arduino Uno Parallel TFT Shield (ILI9486 / ST7796)
+- **Data Bus**: 8-bit parallel interface utilizing GPIOs `12, 13, 26, 25, 17, 16, 27, 14`
+- **Capture Capabilities**:
+  - IEEE 802.11b/g/n raw frame capture
+  - Management frames (Beacons, Probe Requests/Responses, Deauth frames)
+  - Data frames and payload packet volume
+  - Dynamic RSSI decibel telemetry
+
+---
+
+## Hardware Pinout Reference
+
+| TFT Shield Pin | ESP32 GPIO | Function |
 | :--- | :--- | :--- |
-| **5V** | **VIN / 5V** | Power Supply (Mandatory for Uno Shields) |
-| **GND** | **GND** | Common ground reference |
-| **LCD_CS (A3)** | **GPIO 33** | Chip Select |
-| **LCD_RS (A2)** | **GPIO 15** | Register Select / Command-Data |
-| **LCD_WR (A1)** | **GPIO 4** | Write Strobe |
-| **LCD_RD (A0)** | **GPIO 2** | Read Strobe |
-| **LCD_RST (A4)**| **GPIO 32** | Display Reset |
-| **LCD_D0 (8)** | **GPIO 12** | 8-bit parallel data line 0 |
-| **LCD_D1 (9)** | **GPIO 13** | 8-bit parallel data line 1 |
-| **LCD_D2 (2)** | **GPIO 26** | 8-bit parallel data line 2 |
-| **LCD_D3 (3)** | **GPIO 25** | 8-bit parallel data line 3 |
-| **LCD_D4 (4)** | **GPIO 17** | 8-bit parallel data line 4 |
-| **LCD_D5 (5)** | **GPIO 16** | 8-bit parallel data line 5 |
-| **LCD_D6 (6)** | **GPIO 27** | 8-bit parallel data line 6 |
-| **LCD_D7 (7)** | **GPIO 14** | 8-bit parallel data line 7 |
+| **LCD_CS** | GPIO 33 | Chip Select |
+| **LCD_RS (CD)** | GPIO 15 | Register Select / Command-Data |
+| **LCD_WR** | GPIO 4 | Write Strobe |
+| **LCD_RD** | GPIO 2 | Read Strobe |
+| **LCD_RST** | GPIO 32 | Hardware Reset |
+| **LCD_D0 - D7** | `12, 13, 26, 25, 17, 16, 27, 14` | 8-Bit Data Bus |
 
 ---
 
 ## Installation & Setup
 
-1. **Install Arduino IDE** and the [ESP32 Core](https://docs.espressif.com/projects/arduino-esp32/en/latest/installing.html).
-2. Open the **Arduino Library Manager** (`Sketch > Include Library > Manage Libraries`).
-3. Search for and install **`LovyanGFX`** by lovyan03.
-4. Open `esp32_sniffer.ino`.
-5. **Select your Display Driver:** Around line 34 in the code, uncomment the driver that matches your screen (e.g., `lgfx::Panel_ILI9481`, `lgfx::Panel_ILI9486`, or `lgfx::Panel_ST7796`).
-6. Select your ESP32 board under **Tools > Board** and hit **Upload**!
+1. Clone this repository:
+   ```bash
+   git clone https://github.com/Midhun-M-git/Esp32_Cyber_packet_sniffer.git
+   cd Esp32_Cyber_packet_sniffer
+   ```
+
+2. Configure TFT_eSPI:
+   - Copy `User_Setup.h` from this repository to your Arduino libraries folder:
+     `Arduino/libraries/TFT_eSPI/User_Setup.h`
+
+3. Flash Firmware:
+   - Open `esp32_sniffer.ino` in Arduino IDE or PlatformIO.
+   - Select Board: `ESP32 Dev Module`.
+   - Set CPU Frequency: `240MHz (WiFi/BT)`.
+   - Click **Upload**.
 
 ---
 
-## Deep-Dive Architecture
+## License
 
-To build a high-performance network sniffer that actually works reliably on cheap hardware, we addressed critical bottlenecks:
-
-### Thread-Safety & Queueing
-The Wi-Fi promiscuous callback fires directly inside a high-priority background network thread running on FreeRTOS. Drawing onto an LCD takes time. If we draw directly inside the callback, the ESP32 Wi-Fi thread blocks and crashes the Watchdog Timer (WDT).
-**Solution:** We implemented a lock-free circular queue. Captured packets are instantly dumped into RAM. The main `loop()` on Core 1 pops packets from this queue and renders the Cyberpunk dashboard at its own safe pace.
-
-### Analog Touch Screen Limitations
-Why doesn't the touch screen work? Analog resistive touch screens (like those on Uno shields) require the ESP32's ADC (Analog-to-Digital Converter) to measure touch voltages. Because the pins we use (like GPIO 4 and 15) belong to **ADC2**, and the ESP32 physically disables ADC2 when the Wi-Fi radio is active, it is mathematically impossible to use this specific touch screen simultaneously with a Wi-Fi sniffer!
-
----
-*Created by [Midhun-M-git](https://github.com/Midhun-M-git)*
+This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for details.
